@@ -12,6 +12,7 @@ It covers the complete machine learning pipeline:
     Evaluating the model's performance
 
 The code is designed to run in a Jupyter Notebook without errors and can be easily extended for other datasets.
+
 📊 Dataset
 
 The dataset used is the Breast Cancer Wisconsin (Diagnostic) Dataset included in sklearn.datasets.
@@ -34,7 +35,7 @@ pip install pandas scikit-learn
     Clone this repository:
 
 bash
-git clone https://github.com/your-username/your-repo-name.git
+git clone [https://github.com/your-username/your-repo-name.git](https://github.com/Jawad-Alharake/Breast-Cancer-Classification-using-Machine-Learning/blob/main/Python%20code)
 
 Open the Jupyter Notebook:
 
