@@ -1,63 +1,48 @@
-!pip install biopython pandas matplotlib 
+# Import necessary libraries
+import pandas as pd  # For data manipulation
+from sklearn.datasets import load_breast_cancer  # For loading a biological dataset
+from sklearn.model_selection import train_test_split  # For splitting data into training and test sets
+from sklearn.preprocessing import StandardScaler  # For feature scaling
+from sklearn.ensemble import RandomForestClassifier  # Machine learning model
+from sklearn.metrics import accuracy_score, classification_report  # For model evaluation
 
-from Bio import Entrez, SeqIO  # Import Entrez for NCBI API access, SeqIO for parsing sequence files
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
+# Load the breast cancer dataset from sklearn, which is a biological dataset for classification
+data = load_breast_cancer()
 
-# Function to fetch sequences from NCBI nucleotide database using accession numbers
-def fetch_sequences(accessionNumbers):
-    fetchedSequences = []  
-    for acc in accessionNumbers: 
-        handle = Entrez.efetch(db="nucleotide", id=acc, rettype="fasta", retmode="text")  
-        # efetch: fetches sequence by ID from the nucleotide database in FASTA format (text mode)
+# Convert the dataset into a pandas DataFrame for easier manipulation and visualization
+df = pd.DataFrame(data.data, columns=data.feature_names)
 
-        record = SeqIO.read(handle, "fasta")  # Parse the fetched FASTA data into a SeqRecord object
-        fetchedSequences.append(record)  
-        handle.close()  # Close the network handle
-    return fetchedSequences  
+# Add the target variable (labels) to the DataFrame
+df['target'] = data.target
 
-# Example accession numbers (human and chimpanzee mitochondrial genomes)
-accession_numbers = [
-    "NC_012920.1",  # Homo sapiens mitochondrion, complete genome
-    "NC_001807.4",  # Homo sapiens mitochondrion, revised Cambridge Reference Sequence
-    "NC_011137.1"   # Pan troglodytes mitochondrion, complete genome
-]
+# Show basic information about the dataset
+print("Dataset shape:", df.shape)
+print("First 5 rows:\n", df.head())
 
-# Fetch sequences from NCBI based on the above accession list
-seq_records = fetch_sequences(accession_numbers)
+# Split the data into features (X) and target labels (y)
+X = df.drop('target', axis=1)
+y = df['target']
 
-# Function to calculate nucleotide composition in percentages
-def nucleotide_composition(seq_record):
-    seq = str(seq_record.seq).upper()  # Get sequence as a string and convert to uppercase
-    comp = {  # Count each type of nucleotide
-        'A': seq.count('A'),  # Adenine
-        'T': seq.count('T'),  # Thymine
-        'G': seq.count('G'),  # Guanine
-        'C': seq.count('C'),  # Cytosine
-        'N': seq.count('N')   # Ambiguous/unknown nucleotides
-    }
-    total = len(seq)  
-    for base in comp:  # Convert counts to percentages
-        comp[base] = comp[base] / total * 100
-    return comp  # Return dictionary of nucleotide percentages
+# Split the dataset into training set (80%) and test set (20%) for unbiased model evaluation
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# List to hold composition data for all sequences
-comp_data = []
-for record in seq_records:  
-    comp = nucleotide_composition(record)  # Calculate composition
-    comp['Sequence'] = record.id  # Add sequence identifier
-    comp_data.append(comp)  
+# Standardize the features by removing the mean and scaling to unit variance
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)  # Fit on training data and transform it
+X_test_scaled = scaler.transform(X_test)  # Transform the test data
 
-df_comp = pd.DataFrame(comp_data)
+# Initialize the Random Forest Classifier with a fixed random state for reproducibility
+model = RandomForestClassifier(random_state=42)
 
-# Plot nucleotide composition as a bar chart
-df_comp.set_index('Sequence', inplace=True)  # Use sequence IDs as DataFrame index
-df_comp.plot(kind='bar', figsize=(10, 6))    
-plt.title('Nucleotide Composition (%) for Selected Sequences')  
-plt.ylabel('Percentage (%)')     
-plt.xlabel('Sequence Accession') 
-plt.xticks(rotation=45)          # Rotate x-axis labels for readability
-plt.legend(title='Nucleotide')   
-plt.tight_layout()               # Adjust layout to prevent label overlap
-plt.show()
+# Train the model on the training data
+model.fit(X_train_scaled, y_train)
+
+# Predict the target labels for the test set
+y_pred = model.predict(X_test_scaled)
+
+# Calculate the accuracy of the model on unseen test data
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Display detailed classification metrics
+print("Classification Report:\n", classification_report(y_test, y_pred, target_names=data.target_names))
